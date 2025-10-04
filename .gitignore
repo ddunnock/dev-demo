@@ -1,0 +1,18 @@
+# Environment variables containing secrets
+.env
+
+# Local development
+*.log
+*.tmp
+
+# Docker volumes
+/gitlab/
+/wikijs/
+/openproject/
+/nginx/ssl/
+
+# IDE files
+.vscode/
+*.swp
+*.swo
+*~
