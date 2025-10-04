@@ -66,12 +66,8 @@ services:
       DB_USER: wikijs
       DB_PASS: ${WIKIJS_DB_PASSWORD}
       DB_NAME: wiki
-      # Wiki.js specific configuration
-      WIKI_HOST: ${WIKIJS_HOSTNAME}
-      WIKI_PORT: 3000
     volumes:
-      - ./wikijs/data:/wiki/data/content
-      - ./wikijs/themes:/wiki/themes/custom
+      - ./wikijs/data:/wiki/data
     restart: unless-stopped
 
   # OpenProject Database
