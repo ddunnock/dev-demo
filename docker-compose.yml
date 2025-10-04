@@ -24,7 +24,7 @@ services:
     hostname: ${GITLAB_HOSTNAME}
     environment:
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://${GITLAB_HOSTNAME}'
+        external_url 'https://${GITLAB_HOSTNAME}'
         gitlab_rails['gitlab_shell_ssh_port'] = 2222
         # Reduce memory usage
         puma['worker_processes'] = 2
@@ -94,7 +94,7 @@ services:
     environment:
       OPENPROJECT_SECRET_KEY_BASE: ${OPENPROJECT_SECRET_KEY}
       OPENPROJECT_HOST__NAME: ${OPENPROJECT_HOSTNAME}
-      OPENPROJECT_HTTPS: "false"
+      OPENPROJECT_HTTPS: "true"
       DATABASE_URL: "postgres://postgres:${OPENPROJECT_DB_PASSWORD}@openproject-db/openproject?pool=20&encoding=unicode&reconnect=true"
       RAILS_CACHE_STORE: "memcache"
       OPENPROJECT_CACHE__MEMCACHE__SERVER: "openproject-cache:11211"
