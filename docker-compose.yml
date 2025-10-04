@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - gitlab
+      - wikijs
+      - openproject-web
+    restart: unless-stopped
+
+  # GitLab
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    hostname: ${GITLAB_HOSTNAME}
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://${GITLAB_HOSTNAME}'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        # Reduce memory usage
+        puma['worker_processes'] = 2
+        sidekiq['max_concurrency'] = 10
+        postgresql['shared_buffers'] = "256MB"
+        postgresql['max_worker_processes'] = 4
+        prometheus_monitoring['enable'] = false
+    ports:
+      - "2222:22"
+    volumes:
+      - ./gitlab/config:/etc/gitlab
+      - ./gitlab/logs:/var/log/gitlab
+      - ./gitlab/data:/var/opt/gitlab
+    shm_size: '256m'
+    restart: unless-stopped
+
+  # Wiki.js Database
+  wikijs-db:
+    image: postgres:15-alpine
+    container_name: wikijs-db
+    environment:
+      POSTGRES_DB: wiki
+      POSTGRES_USER: wikijs
+      POSTGRES_PASSWORD: ${WIKIJS_DB_PASSWORD}
+    volumes:
+      - ./wikijs/db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Wiki.js
+  wikijs:
+    image: ghcr.io/requarks/wiki:2
+    container_name: wikijs
+    depends_on:
+      - wikijs-db
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: wikijs-db
+      DB_PORT: 5432
+      DB_USER: wikijs
+      DB_PASS: ${WIKIJS_DB_PASSWORD}
+      DB_NAME: wiki
+    volumes:
+      - ./wikijs/data:/wiki/data
+    restart: unless-stopped
+
+  # OpenProject Database
+  openproject-db:
+    image: postgres:13
+    container_name: openproject-db
+    environment:
+      POSTGRES_PASSWORD: ${OPENPROJECT_DB_PASSWORD}
+      POSTGRES_DB: openproject
+    volumes:
+      - ./openproject/pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # OpenProject
+  openproject-web:
+    image: openproject/community:14
+    container_name: openproject
+    depends_on:
+      - openproject-db
+    environment:
+      OPENPROJECT_SECRET_KEY_BASE: ${OPENPROJECT_SECRET_KEY}
+      OPENPROJECT_HOST__NAME: ${OPENPROJECT_HOSTNAME}
+      OPENPROJECT_HTTPS: "false"
+      DATABASE_URL: "postgres://postgres:${OPENPROJECT_DB_PASSWORD}@openproject-db/openproject?pool=20&encoding=unicode&reconnect=true"
+      RAILS_CACHE_STORE: "memcache"
+      OPENPROJECT_CACHE__MEMCACHE__SERVER: "openproject-cache:11211"
+      OPENPROJECT_RAILS__RELATIVE__URL__ROOT: ""
+    volumes:
+      - ./openproject/assets:/var/openproject/assets
+    restart: unless-stopped
+
+  # OpenProject Cache
+  openproject-cache:
+    image: memcached:alpine
+    container_name: openproject-cache
+    restart: unless-stopped
+
+networks:
+  default:
+    name: selfhosted-network
