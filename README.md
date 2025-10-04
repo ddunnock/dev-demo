@@ -85,3 +85,4 @@ The configuration uses environment variables to keep secrets secure while allowi
 - Always use the `.env.example` as a template for new deployments
 - Regularly update passwords and secret keys
 - Backup your data volumes regularly
+# Test update
